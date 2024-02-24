@@ -1,0 +1,71 @@
+---
+openapi: 3.0.3
+info:
+  title: endpoints API
+  version: "1.0"
+tags:
+  - name: Get
+  - name: Post
+paths:
+  /hello/{name}:
+    get:
+      tags:
+        - Get
+      summary: "Says hello {name}"
+      description: "Says hello {name}"
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HelloResponse'
+        "400":
+          description: Bad request (string is null or empty)
+  /reverse:
+    post:
+      tags:
+        - Post
+      summary: Accepts a string and sends an object containing the original and a
+        reversed version
+      description: Accepts a string and sends an object containing the original and
+        a reversed version
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReverseRequest'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReverseResponse'
+        "400":
+          description: Bad Request (body is null or content is empty)
+components:
+  schemas:
+    HelloResponse:
+      type: object
+      properties:
+        content:
+          type: string
+    ReverseRequest:
+      type: object
+      properties:
+        content:
+          type: string
+    ReverseResponse:
+      type: object
+      properties:
+        original:
+          type: string
+        reversed:
+          type: string

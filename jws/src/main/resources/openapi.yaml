@@ -1,0 +1,282 @@
+---
+openapi: 3.0.3
+info:
+  title: jws API
+  version: 1.0.0-SNAPSHOT
+servers:
+  - url: http://localhost:8082
+    description: Used with quarkus:dev
+  - url: http://localhost:8080
+    description: Used in production environment
+tags:
+- name: Basics
+- name: Hard
+paths:
+  /games:
+    get:
+      tags:
+      - Basics
+      summary: Get all games
+      description: Get all games
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GameListResponse'
+    post:
+      tags:
+      - Basics
+      summary: Create a new game
+      description: Create a new game
+      requestBody:
+        description: The name of the first player of the game
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGameRequest'
+      responses:
+        "200":
+          description: Game created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameDetailResponse'
+        "400":
+          description: Bad request (request or name is null)
+  /games/{gameId}:
+    get:
+      tags:
+      - Basics
+      summary: Get game info
+      description: Get game info
+      parameters:
+      - name: gameId
+        in: path
+        required: true
+        schema:
+          format: int64
+          type: integer
+      responses:
+        "200":
+          description: Game info
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameDetailResponse'
+        "404":
+          description: Cannot found game with this id
+    post:
+      tags:
+      - Basics
+      summary: Join a game
+      description: Join a game
+      parameters:
+      - name: gameId
+        in: path
+        required: true
+        schema:
+          format: int64
+          type: integer
+      requestBody:
+        description: The name of the player who will join the game
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JoinGameRequest'
+      responses:
+        "200":
+          description: Game successfully joined
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameDetailResponse'
+        "400":
+          description: "The request is null, or the player name is null or the game\
+            \ cannot be started (already started, too many players)"
+        "404":
+          description: Game with this ID does not exist
+  /games/{gameId}/players/{playerId}/bomb:
+    post:
+      tags:
+      - Hard
+      summary: Put a bomb
+      description: Put a bomb at the specified coordinates
+      parameters:
+      - name: gameId
+        in: path
+        required: true
+        schema:
+          format: int64
+          type: integer
+      - name: playerId
+        in: path
+        required: true
+        schema:
+          format: int64
+          type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutBombRequest'
+      responses:
+        "200":
+          description: Bomb successfully placed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameDetailResponse'
+        "400":
+          description: "The request is null, or the game is not started or the player\
+            \ is already dead, or the coords are wrong."
+        "404":
+          description: "The game with this ID, or the player does not exist"
+        "429":
+          description: The player has already put a bomb in the last X ticks
+  /games/{gameId}/players/{playerId}/move:
+    post:
+      tags:
+      - Hard
+      summary: Move a player
+      description: Move a player
+      parameters:
+      - name: gameId
+        in: path
+        required: true
+        schema:
+          format: int64
+          type: integer
+      - name: playerId
+        in: path
+        required: true
+        schema:
+          format: int64
+          type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MovePlayerRequest'
+      responses:
+        "200":
+          description: Player successfully moved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameDetailResponse'
+        "400":
+          description: "The game is not running or the player is already dead. Or,\
+            \ the player cannot move to the specified position"
+        "404":
+          description: "The game with this ID, or the player does not exist"
+        "429":
+          description: The player has already moved in the last X ticks
+  /games/{gameId}/start:
+    patch:
+      tags:
+      - Basics
+      summary: Start a game
+      description: Start a game
+      parameters:
+      - name: gameId
+        in: path
+        required: true
+        schema:
+          format: int64
+          type: integer
+      responses:
+        "200":
+          description: Game started successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameDetailResponse'
+        "404":
+          description: The game with this ID does not exist
+components:
+  schemas:
+    CreateGameRequest:
+      type: object
+      properties:
+        name:
+          type: string
+    GameDetailResponse:
+      type: object
+      properties:
+        startTime:
+          format: date-time
+          type: string
+        state:
+          $ref: '#/components/schemas/GameState'
+        players:
+          type: array
+          items:
+            $ref: '#/components/schemas/Player'
+        map:
+          type: array
+          items:
+            type: string
+        id:
+          format: int64
+          type: integer
+    GameListResponse:
+      type: object
+      properties:
+        id:
+          format: int64
+          type: integer
+        players:
+          format: int32
+          type: integer
+        state:
+          $ref: '#/components/schemas/GameState'
+    GameState:
+      enum:
+      - FINISHED
+      - RUNNING
+      - STARTING
+      type: string
+    JoinGameRequest:
+      type: object
+      properties:
+        name:
+          type: string
+    MovePlayerRequest:
+      type: object
+      properties:
+        posX:
+          format: int32
+          type: integer
+        posY:
+          format: int32
+          type: integer
+    Player:
+      type: object
+      properties:
+        id:
+          format: int64
+          type: integer
+        name:
+          type: string
+        lives:
+          format: int32
+          type: integer
+        posX:
+          format: int32
+          type: integer
+        posY:
+          format: int32
+          type: integer
+    PutBombRequest:
+      type: object
+      properties:
+        posX:
+          format: int32
+          type: integer
+        posY:
+          format: int32
+          type: integer
